@@ -1,0 +1,70 @@
+import requests
+from bs4 import BeautifulSoup
+import time
+import json
+import re
+
+#品牌名
+brand_name = {'texas':'8d190e00196ba9502099586b881b1abb',
+              'nxp':'5f2f1de30516cc9a350f430b41ceb578',
+              'infineon':'8507a2d98c1e8cf70cd971b841d71e9f',
+              'mps':'9172774d96dc1a72703a4e45814d2cf0',}
+
+#一级菜单
+first_menu=[94,134,869,327,177,266,157,1039,247,1970,1194,1578,170,308,498,1579,1549,1087,2492,1944]
+
+            # 327:[],
+            # 177:[],
+            # 266:[],
+            # 157:[],
+            # 1039:[],
+            # 247:[],
+            # 1970:[],
+            # 1194:[],
+            # 1578:[],
+            # 170:[],
+            # 308:[],
+            # 498:[],
+            # 1579:[],
+            # 1549:[],
+            # 1087:[],
+            # 2492:[],
+            # 1944:[]}
+
+            
+
+for id in first_menu:
+    url1 = f"https://www.semiee.com/bdxx-api/brand/vipDetail/14/classify/list?parentClassifyId={id}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    #需更换cookies
+    cookies = {'cookie_name': 'CNZZDATA1272851447=709862548-1755051855-https%253A%252F%252Fbaidu.com%252F%7C1755052932; JSESSIONID=69FAE04EC2085AA6266A834F3F44F845; UM_distinctid=198a13e0d5419c0-04aa3132adf747-3b62654b-104000-198a13e0d551f9a'}
+    response = requests.get(url1, headers=headers, cookies=cookies)
+
+    data = response.json()
+    alldata = {}
+    second_menu={}
+
+    # print(data)
+    for item in data['result']:
+        print(item['name'],item['id'])
+        second_menu[item['name']] = item['id']
+    with open("second_menu.json", "a", encoding="utf-8") as f:
+        json.dump(second_menu, f, ensure_ascii=False, indent=2)
+
+    time.sleep(2)  # 避免请求过快被封禁
+
+    for id2 in second_menu.values():
+        url2 = f"https://www.semiee.com/bdxx-api/brand/vipDetail/14/classify/list?parentClassifyId={id2}"
+        response = requests.get(url2, headers=headers, cookies=cookies)
+        data = response.json()
+        for item in data['result']:
+            print("    ", item['name'], item['id'])
+            alldata[item['name']] = item['id']
+        print('\n')
+        time.sleep(2)
+
+    with open("{id}.json".format(id=id), "a", encoding="utf-8") as f:
+        json.dump(alldata, f, ensure_ascii=False, indent=2)
+        
+
+

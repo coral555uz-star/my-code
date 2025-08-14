@@ -41,7 +41,7 @@ for id in first_menu:
     response = requests.get(url1, headers=headers, cookies=cookies)
 
     data = response.json()
-    alldata = {}
+    
     second_menu={}
 
     # print(data)
@@ -50,6 +50,7 @@ for id in first_menu:
         second_menu[item['name']] = item['id']
     with open("second_menu.json", "a", encoding="utf-8") as f:
         json.dump(second_menu, f, ensure_ascii=False, indent=2)
+        print(f"已保存 {id}.json 文件")
 
     time.sleep(2)  # 避免请求过快被封禁
 
@@ -57,14 +58,18 @@ for id in first_menu:
         url2 = f"https://www.semiee.com/bdxx-api/brand/vipDetail/14/classify/list?parentClassifyId={id2}"
         response = requests.get(url2, headers=headers, cookies=cookies)
         data = response.json()
+        alldata = {}
         for item in data['result']:
             print("    ", item['name'], item['id'])
             alldata[item['name']] = item['id']
+        # 保存所有二级菜单的详细信息 名称为一级菜单的id号
+        with open("%s_%s.json" %(id,id2), "a", encoding="utf-8") as f:
+            json.dump(alldata, f, ensure_ascii=False, indent=2)
+            print(f"已保存 {id}_{id2}.json 文件")
         print('\n')
         time.sleep(2)
 
-    with open("{id}.json".format(id=id), "a", encoding="utf-8") as f:
-        json.dump(alldata, f, ensure_ascii=False, indent=2)
+    
         
 
 

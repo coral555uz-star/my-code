@@ -1,0 +1,7 @@
+{
+  "MIPI开关": 961,
+  "MIPI转DP": 962,
+  "MIPI转LVDS": 963,
+  "MIPI转Flatlink": 966,
+  "MIPI重定时器": 967
+}

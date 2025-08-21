@@ -2,7 +2,8 @@ import sys
 import pymysql
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QListWidget, QMessageBox, QInputDialog, QTextEdit, QFormLayout
+    QPushButton, QListWidget, QMessageBox, QInputDialog, QTextEdit, QFormLayout,
+    QComboBox
 )
 
 
@@ -48,6 +49,9 @@ def load_data():
     conn.close()
     return data
 
+
+
+
 # 不再需要save_data，所有操作直接写MySQL
 
 class ChipManager(QWidget):
@@ -61,7 +65,7 @@ class ChipManager(QWidget):
     def init_ui(self):
         main_layout = QVBoxLayout()
 
-        # 搜索区
+        # 搜索区1
         search_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("输入芯片名称关键词")
@@ -71,6 +75,15 @@ class ChipManager(QWidget):
         search_layout.addWidget(self.search_input)
         search_layout.addWidget(search_btn)
         main_layout.addLayout(search_layout)
+
+        #搜索区2
+        search_layout2 = QHBoxLayout()
+        self.combo = QComboBox()
+        self.load_db_companies('brand_name','chip_brand')
+        search_layout2.addWidget(QLabel("公司名称："))
+        search_layout2.addWidget(self.combo)
+
+        main_layout.addLayout(search_layout2)
 
         # 结果区
         self.result_list = QListWidget()
@@ -232,6 +245,18 @@ class ChipManager(QWidget):
         self.data = load_data()
         self.refresh_list()
         QMessageBox.information(self, "提示", "修改成功！")
+
+    # 连接MySQL并查询
+    def load_db_companies(self,key,table):
+        conn = get_conn()
+        with conn.cursor() as cursor:
+            sql=f"SELECT {key} FROM {table}"
+            cursor.execute(sql)  # 假设company表有name字段
+            results = cursor.fetchall()
+            for row in results:
+                self.combo.addItem(row[0])  # row[0]是公司名
+        conn.close()
+
 
 if __name__ == "__main__":
     init_db()

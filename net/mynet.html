@@ -1,0 +1,445 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芯片查询系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+    <style>
+        body {
+            background-color: #F5F5F5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .container {
+            width: 1440px;
+            height: 900px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .content-area {
+            width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            background: white;
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2A5CAA;
+            flex: 1;
+        }
+        .search-box {
+            position: relative;
+            width: 500px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: 1px solid #E0E0E0;
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.3s;
+        }
+        .search-box input:focus {
+            border-color: #2A5CAA;
+            box-shadow: 0 0 0 2px rgba(42, 92, 170, 0.2);
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+        .filter-area {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            background: #F5F7FA;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        .filter-group {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+        .filter-select {
+            flex: 1;
+            position: relative;
+        }
+        .filter-select select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            background: white;
+            font-size: 16px;
+            appearance: none;
+            cursor: pointer;
+        }
+        .filter-select select:focus {
+            border-color: #2A5CAA;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(42, 92, 170, 0.2);
+        }
+        .filter-select::after {
+            content: "▼";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+            font-size: 12px;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-confirm {
+            background: #2A5CAA;
+            color: white;
+            border: none;
+        }
+        .btn-confirm:hover {
+            background: #1d4a8a;
+        }
+        .btn-reset {
+            background: white;
+            color: #666;
+            border: 1px solid #E0E0E0;
+        }
+        .btn-reset:hover {
+            background: #f0f0f0;
+        }
+        .results-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .chip-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .chip-param {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .param-label {
+            color: #666;
+            width: 80px;
+        }
+        .param-value {
+            color: #333;
+            flex: 1;
+        }
+        .chip-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .status-available {
+            background: #E8F5E9;
+            color: #4CAF50;
+        }
+        .status-disabled {
+            background: #FFEBEE;
+            color: #F44336;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #E0E0E0;
+            background: white;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #F5F7FA;
+        }
+        .action-btn-primary {
+            background: #2A5CAA;
+            color: white;
+            border: none;
+        }
+        .action-btn-primary:hover {
+            background: #1d4a8a;
+        }
+        .suggestions {
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 10;
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background: #F5F7FA;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部功能区 -->
+        <div class="header content-area">
+            <div class="title">芯片查询系统</div>
+            <div class="search-box">
+                <span class="search-icon">
+                    <span class="iconify" data-icon="mdi:magnify" data-width="20"></span>
+                </span>
+                <input type="text" id="searchInput" placeholder="输入芯片名称或型号...">
+                <div class="suggestions" id="suggestions" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- 筛选区 -->
+        <div class="filter-area content-area">
+            <div class="filter-group">
+                <div class="filter-select">
+                    <select id="chipType">
+                        <option value="">芯片类型</option>
+                        <option value="mcu">MCU微控制器</option>
+                        <option value="fpga">FPGA可编程芯片</option>
+                        <option value="soc">SoC系统芯片</option>
+                        <option value="dsp">DSP数字信号处理器</option>
+                    </select>
+                </div>
+                <div class="filter-select">
+                    <select id="manufacturer">
+                        <option value="">厂商</option>
+                        <option value="ti">德州仪器</option>
+                        <option value="st">意法半导体</option>
+                        <option value="nxp">恩智浦</option>
+                        <option value="microchip">微芯科技</option>
+                    </select>
+                </div>
+                <div class="filter-select">
+                    <select id="package">
+                        <option value="">封装类型</option>
+                        <option value="qfn">QFN</option>
+                        <option value="bga">BGA</option>
+                        <option value="sop">SOP</option>
+                        <option value="lqfp">LQFP</option>
+                    </select>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-reset" id="resetBtn">重置</button>
+                <button class="btn btn-confirm" id="confirmBtn">确认</button>
+            </div>
+        </div>
+        
+        <!-- 结果展示区 -->
+        <div class="results-area content-area">
+            <div class="card-grid" id="resultsContainer">
+                <!-- 卡片将通过JS动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 芯片数据
+        const chipData = [
+            { id: 1, name: "STM32F407VET6", type: "mcu", manufacturer: "st", package: "lqfp", 
+              params: { core: "ARM Cortex-M4", freq: "168MHz", flash: "512KB", ram: "192KB" }, status: "available" },
+            { id: 2, name: "TMS320F28335", type: "dsp", manufacturer: "ti", package: "lqfp", 
+              params: { core: "C28x", freq: "150MHz", flash: "512KB", ram: "68KB" }, status: "available" },
+            { id: 3, name: "LPC1768FBD100", type: "mcu", manufacturer: "nxp", package: "lqfp", 
+              params: { core: "ARM Cortex-M3", freq: "100MHz", flash: "512KB", ram: "64KB" }, status: "disabled" },
+            { id: 4, name: "ATmega328P", type: "mcu", manufacturer: "microchip", package: "sop", 
+              params: { core: "AVR", freq: "20MHz", flash: "32KB", ram: "2KB" }, status: "available" },
+            { id: 5, name: "XC7A100T", type: "fpga", manufacturer: "xilinx", package: "bga", 
+              params: { logic: "101K", bram: "4.9Mb", dsp: "240" }, status: "available" },
+            { id: 6, name: "MK64FN1M0VLL12", type: "mcu", manufacturer: "nxp", package: "lqfp", 
+              params: { core: "ARM Cortex-M4", freq: "120MHz", flash: "1MB", ram: "256KB" }, status: "available" },
+            { id: 7, name: "PIC32MX795F512L", type: "mcu", manufacturer: "microchip", package: "tqfp", 
+              params: { core: "MIPS32", freq: "80MHz", flash: "512KB", ram: "128KB" }, status: "disabled" },
+            { id: 8, name: "EP4CE115F29C7N", type: "fpga", manufacturer: "altera", package: "bga", 
+              params: { logic: "114K", bram: "3.9Mb", dsp: "266" }, status: "available" }
+        ];
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderChips(chipData);
+            
+            // 搜索框输入事件
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const suggestions = document.getElementById('suggestions');
+                
+                if (searchTerm.length > 0) {
+                    const filtered = chipData.filter(chip => 
+                        chip.name.toLowerCase().includes(searchTerm) || 
+                        Object.values(chip.params).some(val => 
+                            String(val).toLowerCase().includes(searchTerm)
+                        )
+                    );
+                    
+                    if (filtered.length > 0) {
+                        suggestions.innerHTML = filtered.map(chip => 
+                            `<div class="suggestion-item" data-id="${chip.id}">${chip.name}</div>`
+                        ).join('');
+                        suggestions.style.display = 'block';
+                    } else {
+                        suggestions.innerHTML = '<div class="suggestion-item">无匹配结果</div>';
+                        suggestions.style.display = 'block';
+                    }
+                } else {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // 建议项点击事件
+            document.getElementById('suggestions').addEventListener('click', function(e) {
+                if (e.target.classList.contains('suggestion-item')) {
+                    const chipId = parseInt(e.target.dataset.id);
+                    const chip = chipData.find(c => c.id === chipId);
+                    if (chip) {
+                        renderChips([chip]);
+                        document.getElementById('suggestions').style.display = 'none';
+                    }
+                }
+            });
+            
+            // 确认按钮事件
+            document.getElementById('confirmBtn').addEventListener('click', function() {
+                const type = document.getElementById('chipType').value;
+                const manufacturer = document.getElementById('manufacturer').value;
+                const packageType = document.getElementById('package').value;
+                
+                const filtered = chipData.filter(chip => {
+                    return (type === '' || chip.type === type) &&
+                           (manufacturer === '' || chip.manufacturer === manufacturer) &&
+                           (packageType === '' || chip.package === packageType);
+                });
+                
+                renderChips(filtered);
+            });
+            
+            // 重置按钮事件
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                document.getElementById('chipType').value = '';
+                document.getElementById('manufacturer').value = '';
+                document.getElementById('package').value = '';
+                document.getElementById('searchInput').value = '';
+                document.getElementById('suggestions').style.display = 'none';
+                renderChips(chipData);
+            });
+        });
+
+        // 渲染芯片卡片
+        function renderChips(chips) {
+            const container = document.getElementById('resultsContainer');
+            
+            if (chips.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="mdi:database-remove" style="font-size: 48px;"></span>
+                        <p style="margin-top: 15px; font-size: 18px;">未找到匹配的芯片</p>
+                        <p style="margin-top: 10px; color: #999;">请尝试其他搜索条件</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = chips.map(chip => `
+                <div class="card">
+                    <div class="chip-name">${chip.name}</div>
+                    ${Object.entries(chip.params).map(([key, value]) => `
+                        <div class="chip-param">
+                            <span class="param-label">${getLabel(key)}：</span>
+                            <span class="param-value">${value}</span>
+                        </div>
+                    `).join('')}
+                    <div class="chip-status ${chip.status === 'available' ? 'status-available' : 'status-disabled'}">
+                        ${chip.status === 'available' ? '可用' : '禁用'}
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn">查看详情</button>
+                        <button class="action-btn action-btn-primary">加入项目</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 获取参数标签
+        function getLabel(key) {
+            const labels = {
+                core: "核心架构",
+                freq: "主频",
+                flash: "Flash",
+                ram: "RAM",
+                logic: "逻辑单元",
+                bram: "块RAM",
+                dsp: "DSP单元"
+            };
+            return labels[key] || key;
+        }
+    </script>
+
+</body></html>

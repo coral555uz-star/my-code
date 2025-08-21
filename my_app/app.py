@@ -1,22 +1,54 @@
 import sys
-import json
-import os
+import pymysql
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QListWidget, QMessageBox, QInputDialog, QTextEdit, QFormLayout
 )
 
-DATA_FILE = "result.json"
 
+# MySQL配置
+MYSQL_CONFIG = {
+    'host': '127.0.0.1',
+    'user': 'root',
+    'password': '123456',
+    'database': 'chip',
+    'charset': 'utf8mb4'
+}
+
+def get_conn():
+    return pymysql.connect(**MYSQL_CONFIG)
+
+def init_db():
+    conn = get_conn()
+    with conn.cursor() as cursor:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS test (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cid VARCHAR(64) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                `usage` TEXT,
+                recommend TEXT,
+                param TEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ''')
+    conn.commit()
+    conn.close()
+
+# 查询所有芯片数据，返回字典{cid: [chip, ...]}
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {}
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    conn = get_conn()
+    data = {}
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT brand_id, brand_name FROM chip_brand")
+        for brand_id, brand_name in cursor.fetchall():
+            chip = {"name": brand_name}
+            if brand_id not in data:
+                data[brand_id] = []
+            data[brand_id].append(chip)
+    conn.close()
+    return data
 
-def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+# 不再需要save_data，所有操作直接写MySQL
 
 class ChipManager(QWidget):
     def __init__(self):
@@ -122,16 +154,17 @@ class ChipManager(QWidget):
             param = ""
         cid = cid.strip()
         name = name.strip()
-        chip = {
-            "name": name,
-            "usage": usage.strip(),
-            "recommend": recommend.strip(),
-            "param": param.strip()
-        }
-        if cid not in self.data:
-            self.data[cid] = []
-        self.data[cid].append(chip)
-        save_data(self.data)
+        conn = get_conn()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO chip_info (cid, name, usage, recommend, param) VALUES (%s, %s, %s, %s, %s)",
+                    (cid, name, usage.strip(), recommend.strip(), param.strip())
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        self.data = load_data()
         self.refresh_list()
         QMessageBox.information(self, "提示", "添加成功！")
 
@@ -143,10 +176,17 @@ class ChipManager(QWidget):
         text = item.text()
         cid = text.split("分类ID:")[1].split("  名称:")[0]
         name = text.split("名称:")[1]
-        self.data[cid] = [i for i in self.data[cid] if i.get("name") != name]
-        if not self.data[cid]:
-            del self.data[cid]
-        save_data(self.data)
+        conn = get_conn()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM chip_info WHERE cid=%s AND name=%s",
+                    (cid, name)
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        self.data = load_data()
         self.refresh_list()
         QMessageBox.information(self, "提示", "删除成功！")
 
@@ -158,30 +198,43 @@ class ChipManager(QWidget):
         text = item.text()
         cid = text.split("分类ID:")[1].split("  名称:")[0]
         old_name = text.split("名称:")[1]
-        for chip in self.data[cid]:
-            if chip.get("name") == old_name:
-                new_name, ok1 = QInputDialog.getText(self, "修改芯片名称", "新名称：", text=chip.get("name", ""))
-                if not ok1 or not new_name.strip():
-                    return
-                new_usage, ok2 = QInputDialog.getText(self, "修改主要用途", "新主要用途：", text=chip.get("usage", ""))
-                if not ok2:
-                    new_usage = chip.get("usage", "")
-                new_recommend, ok3 = QInputDialog.getText(self, "修改推荐应用", "新推荐应用：", text=chip.get("recommend", ""))
-                if not ok3:
-                    new_recommend = chip.get("recommend", "")
-                new_param, ok4 = QInputDialog.getText(self, "修改主要参数", "新主要参数：", text=chip.get("param", ""))
-                if not ok4:
-                    new_param = chip.get("param", "")
-                chip["name"] = new_name.strip()
-                chip["usage"] = new_usage.strip()
-                chip["recommend"] = new_recommend.strip()
-                chip["param"] = new_param.strip()
+        # 取出原始数据
+        chip = None
+        for c in self.data.get(cid, []):
+            if c.get("name") == old_name:
+                chip = c
                 break
-        save_data(self.data)
+        if not chip:
+            QMessageBox.warning(self, "警告", "未找到芯片数据")
+            return
+        new_name, ok1 = QInputDialog.getText(self, "修改芯片名称", "新名称：", text=chip.get("name", ""))
+        if not ok1 or not new_name.strip():
+            return
+        new_usage, ok2 = QInputDialog.getText(self, "修改主要用途", "新主要用途：", text=chip.get("usage", ""))
+        if not ok2:
+            new_usage = chip.get("usage", "")
+        new_recommend, ok3 = QInputDialog.getText(self, "修改推荐应用", "新推荐应用：", text=chip.get("recommend", ""))
+        if not ok3:
+            new_recommend = chip.get("recommend", "")
+        new_param, ok4 = QInputDialog.getText(self, "修改主要参数", "新主要参数：", text=chip.get("param", ""))
+        if not ok4:
+            new_param = chip.get("param", "")
+        conn = get_conn()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE chip_info SET name=%s, usage=%s, recommend=%s, param=%s WHERE cid=%s AND name=%s",
+                    (new_name.strip(), new_usage.strip(), new_recommend.strip(), new_param.strip(), cid, old_name)
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        self.data = load_data()
         self.refresh_list()
         QMessageBox.information(self, "提示", "修改成功！")
 
 if __name__ == "__main__":
+    init_db()
     app = QApplication(sys.argv)
     win = ChipManager()
     win.show()

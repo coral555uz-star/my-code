@@ -1,0 +1,14 @@
+const FROM_CONFIG={
+    fields:[
+        {
+            fullXpath:"",
+            type:"",
+            value:""
+        },
+        {
+            fullXpath:"",
+            type:"",
+            value:""
+        }
+    ]
+}
